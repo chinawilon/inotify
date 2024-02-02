@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/fsnotify/fsnotify"
 	"log"
@@ -119,6 +120,12 @@ func readNewContent(filePath string) (string, error) {
 		newContent += scanner.Text() + "\n"
 	}
 
+	fmt.Println("content:", newContent)
+	// 检查是否有错误发生
+	if err := scanner.Err(); err != nil {
+		fmt.Println("Error:", err)
+	}
+
 	// 更新上一次读取的位置
 	lastReadPosition[filePath], _ = file.Seek(0, 1)
 	if err := scanner.Err(); err != nil {
@@ -128,15 +135,48 @@ func readNewContent(filePath string) (string, error) {
 	return newContent, nil
 }
 
+// Message 结构体定义
+type Message struct {
+	MsgType string `json:"msgtype"`
+	Text    struct {
+		Content string `json:"content"`
+	} `json:"text"`
+	At struct {
+		IsAtAll bool `json:"isAtAll"`
+	} `json:"at"`
+}
+
+// NewMessage 函数用于创建 Message 实例
+func NewMessage(title string, errorFile string, errorMessage string) *Message {
+	msg := &Message{
+		MsgType: "text",
+	}
+
+	msg.At.IsAtAll = true
+
+	// 如果是错误信息，附加错误文件信息
+	msg.Text.Content += fmt.Sprintf("\n%s\n错误文件：%s\n错误信息: %s", title, errorFile, errorMessage)
+
+	return msg
+}
+
 func sendAlert(conf *inotifyConf, changedFile, newContent string) error {
 	if strings.Contains(newContent, conf.ErrorKey) {
-		jsonData := fmt.Sprintf(`{"msgtype": "text", "text": {"content": "%s \n错误文件：%s \n错误信息：%s"}, "at": {"isAtAll": true}}`, conf.NoticeTitle, changedFile, newContent)
-
+		msg := NewMessage(conf.NoticeTitle, changedFile, newContent)
+		jsonData, err := json.MarshalIndent(msg, "", "  ")
+		if err != nil {
+			fmt.Println("JSON 编码失败:", err)
+			return err
+		}
 		resp, err := http.Post(conf.DingdingAPI, "application/json", bytes.NewBuffer([]byte(jsonData)))
 		if err != nil {
 			return err
 		}
 		defer resp.Body.Close()
+
+		var bd = make([]byte, 100)
+		resp.Body.Read(bd)
+		fmt.Println(string(bd))
 
 		fmt.Println("Alert sent for", changedFile)
 	} else {
