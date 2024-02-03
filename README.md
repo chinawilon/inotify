@@ -6,15 +6,17 @@
 ```json
 {
   "dirPath": "/Users/mac/code/go/inotify",
-  "errorKey": "error",
+  "filterFile": "\\.log$",
+  "errorKey": "error|fatal",
   "noticeTitle": "监控：管理后台出现error，请及时关注!",
   "dingdingAPI": "https://oapi.dingtalk.com/robot/send?access_token=220afa846d61ae5cc022033df758aa8507252574e66e1956c4dfd016ce411751"
 }
 ```
 
 - `dirPath` 监控的日志目录路径，必须绝对路径
-- `errorKey` 特定关键字
-- `noticeTitle` 告警标题
+- `filterFile` 指定特定的文件，支持正则表达式
+- `errorKey` 错误关键字，支持正则表达式
+- `noticeTitle` 告警标题，注意需要包含特定的关键字(钉钉接口要求)
 - `dingdingAPI` 钉钉API接口
 
 ## 用法
