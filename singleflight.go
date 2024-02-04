@@ -19,6 +19,7 @@ func (g *Group) Do(key string, fn func()) {
 	if c, ok := g.m[key]; ok {
 		g.mu.Unlock()
 		c.wg.Wait() // 这里等待前面一个执行完继续执行
+		g.mu.Lock()
 	}
 	c := new(call)
 	c.wg.Add(1)
