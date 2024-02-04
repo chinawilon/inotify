@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sync"
 )
 
 type InotifyConf struct {
@@ -22,6 +23,8 @@ type InotifyConf struct {
 	filterRe         *regexp.Regexp
 	errorRe          *regexp.Regexp
 	lastReadPosition map[string]int64
+	mu               sync.Mutex
+	gp               *Group
 }
 
 func NewInotify(confPath string) *InotifyConf {
@@ -41,7 +44,7 @@ func NewInotify(confPath string) *InotifyConf {
 	inotify.filterRe = regexp.MustCompile(inotify.FilterFile)
 	inotify.errorRe = regexp.MustCompile(inotify.ErrorKey)
 	inotify.lastReadPosition = make(map[string]int64)
-
+	inotify.gp = &Group{}
 	return &inotify
 }
 
@@ -111,7 +114,9 @@ func (inotify *InotifyConf) ReadNewContent(filePath string) (string, error) {
 	defer file.Close()
 
 	// 获取上一次读取的位置
+	inotify.mu.Lock()
 	lastPosition, ok := inotify.lastReadPosition[filePath]
+	inotify.mu.Unlock()
 	if !ok {
 		lastPosition = 0
 	}
@@ -139,7 +144,9 @@ func (inotify *InotifyConf) ReadNewContent(filePath string) (string, error) {
 	}
 
 	// 更新上一次读取的位置
+	inotify.mu.Lock()
 	inotify.lastReadPosition[filePath], _ = file.Seek(0, 1)
+	inotify.mu.Unlock()
 	if err := scanner.Err(); err != nil {
 		return "", err
 	}
@@ -149,18 +156,21 @@ func (inotify *InotifyConf) ReadNewContent(filePath string) (string, error) {
 
 // JudgeContent 判断文件和新增内容是否满足条件
 func (inotify *InotifyConf) JudgeContent(file string) {
-	if !inotify.IsFilterFile(file) {
-		return
-	}
-	content, err := inotify.ReadNewContent(file)
-	if err != nil {
-		log.Println("Error reading new content:", err)
-		return
-	}
-	if inotify.HasErrorKey(content) {
-		err := inotify.SendAlert(file, content)
-		if err != nil {
-			log.Println("sendAlert err:", err)
+	go inotify.gp.Do(file, func() {
+		if !inotify.IsFilterFile(file) {
+			return
 		}
-	}
+		content, err := inotify.ReadNewContent(file)
+		if err != nil {
+			log.Println("Error reading new content:", err)
+			return
+		}
+		if inotify.HasErrorKey(content) {
+			err := inotify.SendAlert(file, content)
+			if err != nil {
+				log.Println("sendAlert err:", err)
+			}
+		}
+		return
+	})
 }
