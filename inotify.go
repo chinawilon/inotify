@@ -156,10 +156,10 @@ func (inotify *InotifyConf) ReadNewContent(filePath string) (string, error) {
 
 // JudgeContent 判断文件和新增内容是否满足条件
 func (inotify *InotifyConf) JudgeContent(file string) {
+	if !inotify.IsFilterFile(file) {
+		return
+	}
 	go inotify.gp.Do(file, func() {
-		if !inotify.IsFilterFile(file) {
-			return
-		}
 		content, err := inotify.ReadNewContent(file)
 		if err != nil {
 			log.Println("Error reading new content:", err)
