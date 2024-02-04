@@ -50,11 +50,11 @@ func (w *MyWatcher) HandleEvents(end chan<- struct{}) {
 				if err == nil && info.IsDir() {
 					fmt.Println("New directory created:", event.Name)
 					w.Watcher.Add(event.Name)
-				} else if w.Inotify.IsFilterFile(event.Name) {
+				} else {
 					w.Inotify.JudgeContent(event.Name)
 				}
 			}
-			if event.Op&fsnotify.Write == fsnotify.Write && w.Inotify.IsFilterFile(event.Name) {
+			if event.Op&fsnotify.Write == fsnotify.Write {
 				w.Inotify.JudgeContent(event.Name)
 			}
 		case err, ok := <-w.Watcher.Errors:

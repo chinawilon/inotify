@@ -86,23 +86,20 @@ func (inotify *InotifyConf) InitSeek() error {
 }
 
 func (inotify *InotifyConf) SendAlert(changedFile, newContent string) error {
-	if inotify.HasErrorKey(newContent) {
-		msg := NewMessage(inotify.NoticeTitle, changedFile, newContent)
-		jsonData, err := json.MarshalIndent(msg, "", "  ")
-		if err != nil {
-			fmt.Println("JSON 编码失败:", err)
-			return err
-		}
-		resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-		fmt.Println("Alert sent for", changedFile)
-	} else {
-		fmt.Println("No alert for", changedFile)
-	}
 
+	msg := NewMessage(inotify.NoticeTitle, changedFile, newContent)
+	jsonData, err := json.MarshalIndent(msg, "", "  ")
+	if err != nil {
+		fmt.Println("JSON 编码失败:", err)
+		return err
+	}
+	//fmt.Println(string(jsonData))
+	resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	fmt.Println("Alert sent for", changedFile)
 	return nil
 }
 
@@ -150,11 +147,17 @@ func (inotify *InotifyConf) ReadNewContent(filePath string) (string, error) {
 	return newContent, nil
 }
 
+// JudgeContent 判断文件和新增内容是否满足条件
 func (inotify *InotifyConf) JudgeContent(file string) {
+	if !inotify.IsFilterFile(file) {
+		return
+	}
 	content, err := inotify.ReadNewContent(file)
 	if err != nil {
 		log.Println("Error reading new content:", err)
-	} else {
+		return
+	}
+	if inotify.HasErrorKey(content) {
 		err := inotify.SendAlert(file, content)
 		if err != nil {
 			log.Println("sendAlert err:", err)
