@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -78,12 +80,12 @@ func (inotify *InotifyConf) SendAlert(changedFile, newContent string) error {
 		fmt.Println("JSON 编码失败:", err)
 		return err
 	}
-	fmt.Println(string(jsonData))
-	//resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
-	//if err != nil {
-	//	return err
-	//}
-	//defer resp.Body.Close()
+	//fmt.Println(string(jsonData))
+	resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
 	fmt.Println("Alert sent for", changedFile)
 	return nil
 }
