@@ -36,31 +36,32 @@ func NewMyWatcher(inotify *InotifyConf) (*MyWatcher, error) {
 	}, err
 }
 
-func (w *MyWatcher) HandleEvents(end chan<- struct{}) {
-	defer w.Watcher.Close()
+func (w *MyWatcher) HandleEvents() {
 	for {
 		select {
 		case event, ok := <-w.Watcher.Events:
 			if !ok {
-				end <- struct{}{}
 				return
 			}
+			info, err := os.Stat(event.Name)
+			if err != nil {
+				fmt.Println("Os stat error:", err)
+				continue
+			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
-				info, err := os.Stat(event.Name)
 				if err == nil && info.IsDir() {
 					fmt.Println("New directory created:", event.Name)
 					w.Watcher.Add(event.Name)
 				} else {
-					w.Inotify.JudgeContent(event.Name)
+					go w.Inotify.JudgeContent(event.Name, info.Size())
 				}
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				w.Inotify.JudgeContent(event.Name)
+				go w.Inotify.JudgeContent(event.Name, info.Size())
 			}
 		case err, ok := <-w.Watcher.Errors:
 			if !ok {
 				log.Println("Error:", err)
-				end <- struct{}{}
 				return
 			}
 		}

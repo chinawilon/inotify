@@ -21,7 +21,5 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	end := make(chan struct{})
-	go watcher.HandleEvents(end)
-	<-end
+	watcher.HandleEvents()
 }
