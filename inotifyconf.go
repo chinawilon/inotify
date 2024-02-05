@@ -18,8 +18,10 @@ type InotifyConf struct {
 	ErrorKey    string
 	NoticeTitle string
 	DingdingAPI string
+	ExcludeKey  string
 	filterRe    *regexp.Regexp
 	errorRe     *regexp.Regexp
+	excludeRe   *regexp.Regexp
 	ifs         map[string]*InotifyFile
 	mu          sync.Mutex
 	gp          *Group
@@ -41,6 +43,7 @@ func NewInotify(confPath string) *InotifyConf {
 	}
 	inotify.filterRe = regexp.MustCompile(inotify.FilterFile)
 	inotify.errorRe = regexp.MustCompile(inotify.ErrorKey)
+	inotify.excludeRe = regexp.MustCompile(inotify.ExcludeKey)
 	inotify.ifs = make(map[string]*InotifyFile)
 	inotify.gp = &Group{}
 	return &inotify
@@ -51,7 +54,7 @@ func (inotify *InotifyConf) IsFilterFile(file string) bool {
 }
 
 func (inotify *InotifyConf) HasErrorKey(content string) bool {
-	return inotify.errorRe.MatchString(content)
+	return inotify.errorRe.MatchString(content) && (inotify.ExcludeKey == "" || !inotify.excludeRe.MatchString(content))
 }
 
 func (inotify *InotifyConf) InitSeek() error {
