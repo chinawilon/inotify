@@ -1,11 +1,9 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -70,7 +68,7 @@ func (inotify *InotifyConf) InitSeek() error {
 			return nil
 		}
 		if _, ok := inotify.ifs[path]; !ok {
-			inotify.ifs[path], err = NewInotifyFile(path, info.Size())
+			inotify.ifs[path], err = NewInotifyFile(path, info.Size(), false)
 		}
 		return err
 	})
@@ -83,18 +81,25 @@ func (inotify *InotifyConf) SendAlert(changedFile, newContent string) error {
 		fmt.Println("JSON 编码失败:", err)
 		return err
 	}
-	//fmt.Println(string(jsonData))
-	resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
+	fmt.Println(string(jsonData))
+	//resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
+	//if err != nil {
+	//	return err
+	//}
+	//defer resp.Body.Close()
 	fmt.Println("Alert sent for", changedFile)
 	return nil
 }
 
+// Delete 删除
+func (inotify *InotifyConf) Delete(file string) {
+	inotify.mu.Lock()
+	delete(inotify.ifs, file)
+	inotify.mu.Unlock()
+}
+
 // JudgeContent 判断文件和新增内容是否满足条件
-func (inotify *InotifyConf) JudgeContent(file string, fileSize int64) {
+func (inotify *InotifyConf) JudgeContent(file string, fileSize int64, isCreate bool) {
 	var err error
 	if !inotify.IsFilterFile(file) {
 		return
@@ -102,7 +107,7 @@ func (inotify *InotifyConf) JudgeContent(file string, fileSize int64) {
 	inotify.mu.Lock()
 	inf, ok := inotify.ifs[file]
 	if !ok {
-		inf, err = NewInotifyFile(file, fileSize)
+		inf, err = NewInotifyFile(file, fileSize, isCreate)
 		if err != nil {
 			fmt.Println("New inotify file error:", err)
 			inotify.mu.Unlock()

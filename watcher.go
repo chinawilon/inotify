@@ -43,6 +43,11 @@ func (w *MyWatcher) HandleEvents() {
 			if !ok {
 				return
 			}
+			// 如果是删除事件，先删除inotify中的记录
+			if event.Op&fsnotify.Remove == fsnotify.Remove {
+				fmt.Println("Delete file: ", event.Name)
+				w.Inotify.Delete(event.Name)
+			}
 			info, err := os.Stat(event.Name)
 			if err != nil {
 				fmt.Println("Os stat error:", err)
@@ -53,11 +58,11 @@ func (w *MyWatcher) HandleEvents() {
 					fmt.Println("New directory created:", event.Name)
 					w.Watcher.Add(event.Name)
 				} else {
-					go w.Inotify.JudgeContent(event.Name, info.Size())
+					go w.Inotify.JudgeContent(event.Name, info.Size(), true)
 				}
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				go w.Inotify.JudgeContent(event.Name, info.Size())
+				go w.Inotify.JudgeContent(event.Name, info.Size(), false)
 			}
 		case err, ok := <-w.Watcher.Errors:
 			if !ok {

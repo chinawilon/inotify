@@ -12,11 +12,15 @@ type InotifyFile struct {
 	fs  *os.File
 }
 
-func NewInotifyFile(path string, fileSize int64) (*InotifyFile, error) {
+func NewInotifyFile(path string, fileSize int64, isCreate bool) (*InotifyFile, error) {
 	// 这里保持长期打开状态
 	file, err := os.Open(path)
 	if err != nil {
 		return nil, err
+	}
+	// 如果是新创建，那么就从头开始计算
+	if isCreate {
+		fileSize = 0
 	}
 	return &InotifyFile{
 		fs:  file,
