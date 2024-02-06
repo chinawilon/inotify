@@ -133,7 +133,6 @@ func (inotify *InotifyConf) Write(file string, fileSize int64) {
 	inotify.mu.Unlock()
 	inotify.gp.Do(file, func() {
 		content := inf.ReadNewContent(fileSize)
-		fmt.Println("Write content", content)
 		if inotify.HasErrorKey(content) {
 			err = inotify.SendAlert(file, content)
 			if err != nil {
