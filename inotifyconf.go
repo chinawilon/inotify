@@ -70,7 +70,7 @@ func (inotify *InotifyConf) InitSeek() error {
 			return nil
 		}
 		if _, ok := inotify.ifs[path]; !ok {
-			inotify.ifs[path], err = NewInotifyFile(path, info.Size(), false)
+			inotify.ifs[path], err = NewInotifyFile(path, info.Size())
 		}
 		return err
 	})
@@ -100,8 +100,21 @@ func (inotify *InotifyConf) Delete(file string) {
 	inotify.mu.Unlock()
 }
 
-// JudgeContent 判断文件和新增内容是否满足条件
-func (inotify *InotifyConf) JudgeContent(file string, fileSize int64, isCreate bool) {
+// Create 创建
+func (inotify *InotifyConf) Create(file string) {
+	inotify.mu.Lock()
+	inf, err := NewInotifyFile(file, 0)
+	if err != nil {
+		fmt.Println("Create inotify file error:", err)
+		inotify.mu.Unlock()
+		return
+	}
+	inotify.ifs[file] = inf
+	inotify.mu.Unlock()
+}
+
+// Write 判断文件和新增内容是否满足条件
+func (inotify *InotifyConf) Write(file string, fileSize int64) {
 	var err error
 	if !inotify.IsFilterFile(file) {
 		return
@@ -109,7 +122,7 @@ func (inotify *InotifyConf) JudgeContent(file string, fileSize int64, isCreate b
 	inotify.mu.Lock()
 	inf, ok := inotify.ifs[file]
 	if !ok {
-		inf, err = NewInotifyFile(file, fileSize, isCreate)
+		inf, err = NewInotifyFile(file, fileSize)
 		if err != nil {
 			fmt.Println("New inotify file error:", err)
 			inotify.mu.Unlock()
@@ -120,6 +133,7 @@ func (inotify *InotifyConf) JudgeContent(file string, fileSize int64, isCreate b
 	inotify.mu.Unlock()
 	inotify.gp.Do(file, func() {
 		content := inf.ReadNewContent(fileSize)
+		fmt.Println("Write content", content)
 		if inotify.HasErrorKey(content) {
 			err = inotify.SendAlert(file, content)
 			if err != nil {

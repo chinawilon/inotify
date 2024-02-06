@@ -1,5 +1,5 @@
 {
-  "dirPath": "/Users/mac/code/go/inotify",
+  "dirPath": "/Users/mac/code/go/inotify/log",
   "filterFile": "\\.log$",
   "errorKey": "error|fatal",
   "excludeKey": "23000\\]",

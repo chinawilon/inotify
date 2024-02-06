@@ -45,9 +45,10 @@ func (w *MyWatcher) HandleEvents() {
 			}
 			// 如果是删除事件，先删除inotify中的记录
 			if event.Op&fsnotify.Remove == fsnotify.Remove {
-				fmt.Println("Delete file: ", event.Name)
 				w.Inotify.Delete(event.Name)
+				continue
 			}
+			// 这里进一步确保文件没有被删除
 			info, err := os.Stat(event.Name)
 			if err != nil {
 				fmt.Println("Os stat error:", err)
@@ -55,14 +56,14 @@ func (w *MyWatcher) HandleEvents() {
 			}
 			if event.Op&fsnotify.Create == fsnotify.Create {
 				if err == nil && info.IsDir() {
-					fmt.Println("New directory created:", event.Name)
 					w.Watcher.Add(event.Name)
 				} else {
-					go w.Inotify.JudgeContent(event.Name, info.Size(), true)
+					// 这里必须是同步的，不然会影响后面的读取
+					w.Inotify.Create(event.Name)
 				}
 			}
 			if event.Op&fsnotify.Write == fsnotify.Write {
-				go w.Inotify.JudgeContent(event.Name, info.Size(), false)
+				go w.Inotify.Write(event.Name, info.Size())
 			}
 		case err, ok := <-w.Watcher.Errors:
 			if !ok {
