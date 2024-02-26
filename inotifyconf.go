@@ -1,11 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
+	"inotify/notifytypes"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,13 +15,12 @@ type InotifyConf struct {
 	DirPath     string
 	FilterFile  string
 	ErrorKey    string
-	NoticeTitle string
-	DingdingAPI string
 	ExcludeKey  string
+	NotifyTypes map[string]json.RawMessage
+	ifs         map[string]*InotifyFile
 	filterRe    *regexp.Regexp
 	errorRe     *regexp.Regexp
 	excludeRe   *regexp.Regexp
-	ifs         map[string]*InotifyFile
 	mu          sync.Mutex
 	gp          *Group
 }
@@ -76,20 +74,23 @@ func (inotify *InotifyConf) InitSeek() error {
 	})
 }
 
+// SendAlert 执行相关动作
 func (inotify *InotifyConf) SendAlert(changedFile, newContent string) error {
-	msg := NewMessage(inotify.NoticeTitle, changedFile, newContent)
-	jsonData, err := json.MarshalIndent(msg, "", "  ")
-	if err != nil {
-		fmt.Println("JSON 编码失败:", err)
-		return err
+	for notifyType, data := range inotify.NotifyTypes {
+		notifier, ok := notifytypes.IsNotifier(notifyType)
+		if !ok {
+			fmt.Println("未知的通知类型:", notifyType)
+			continue
+		}
+		if err := json.Unmarshal(data, &notifier); err != nil {
+			fmt.Printf("解析 %s 通知时出错: %v\n", notifyType, err)
+			continue
+		}
+		err := notifier.Notify(changedFile, newContent)
+		if err != nil {
+			return err
+		}
 	}
-	//fmt.Println(string(jsonData))
-	resp, err := http.Post(inotify.DingdingAPI, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	fmt.Println("Alert sent for", changedFile)
 	return nil
 }
 
