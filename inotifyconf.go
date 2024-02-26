@@ -97,7 +97,10 @@ func (inotify *InotifyConf) SendAlert(changedFile, newContent string) error {
 // Delete 删除
 func (inotify *InotifyConf) Delete(file string) {
 	inotify.mu.Lock()
-	delete(inotify.ifs, file)
+	if f, ok := inotify.ifs[file]; ok {
+		f.Close()
+		delete(inotify.ifs, file)
+	}
 	inotify.mu.Unlock()
 }
 

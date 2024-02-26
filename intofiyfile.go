@@ -24,6 +24,10 @@ func NewInotifyFile(path string, fileSize int64) (*InotifyFile, error) {
 	}, nil
 }
 
+func (inf *InotifyFile) Close() error {
+	return inf.fs.Close()
+}
+
 // ReadNewContent 获取最新的内容
 func (inf *InotifyFile) ReadNewContent(fileSize int64) string {
 	if inf.lps >= fileSize {
