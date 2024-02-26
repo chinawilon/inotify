@@ -1,8 +1,10 @@
 package notifytypes
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"net/http"
 )
 
 type DingDing struct {
@@ -43,13 +45,13 @@ func (dd *DingDing) Notify(changedFile, newContent string) error {
 		fmt.Println("JSON 编码失败:", err)
 		return err
 	}
-	fmt.Println(string(jsonData))
-	//resp, err := http.Post(dd.Api, "application/json", bytes.NewBuffer(jsonData))
-	//if err != nil {
-	//	return err
-	//}
-	//defer resp.Body.Close()
-	fmt.Println("new content: ", newContent)
-	fmt.Println("Alert sent for", changedFile)
+	//fmt.Println(string(jsonData))
+	resp, err := http.Post(dd.Api, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	//fmt.Println("new content: ", newContent)
+	//fmt.Println("Alert sent for", changedFile)
 	return nil
 }

@@ -5,19 +5,31 @@
 ## 配置
 ```json
 {
-  "dirPath": "/Users/mac/code/go/inotify",
+  "dirPath": "/Users/mac/code/go/inotify/log",
   "filterFile": "\\.log$",
   "errorKey": "error|fatal",
-  "noticeTitle": "监控：管理后台出现error，请及时关注!",
-  "dingdingAPI": "https://oapi.dingtalk.com/robot/send?access_token=220afa846d61ae5cc022033df758aa8507252574e66e1956c4dfd016ce411751"
+  "excludeKey": "23000\\]",
+  "notifyTypes": {
+    "dingding": {
+      "title": "监控：管理后台出现error，请及时关注!",
+      "api": "https://oapi.dingtalk.com/robot/send?access_token=220afa846d61ae5cc022033df758aa8507252574e66e1956c4dfd016ce411751"
+    },
+    "shell": {
+      "command": "echo"
+    }
+  }
 }
+
 ```
 
 - `dirPath` 监控的日志目录路径，必须绝对路径
 - `filterFile` 指定特定的文件，支持正则表达式
 - `errorKey` 错误关键字，支持正则表达式
-- `noticeTitle` 告警标题，注意需要包含特定的关键字(钉钉接口要求)
-- `dingdingAPI` 钉钉API接口
+- `excludeKey` 排除那些关键字，支持正则表达式
+- `notifyTypes` 通知方式，支持多个，目前支持`dingding/shell`
+    - `shell` 注意执行的shell这里会把`changedFile`和`newContent`会当作参数传入
+      - `changedFile` 修改的文件
+      - `newContent` 修改的内容
 
 ## 用法
 1. 下载对应系统的inotify-xxx执行文件
