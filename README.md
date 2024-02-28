@@ -12,7 +12,7 @@
   "notifyTypes": {
     "dingding": {
       "title": "监控：管理后台出现error，请及时关注!",
-      "api": "https://oapi.dingtalk.com/robot/send?access_token=220afa846d61ae5cc022033df758aa8507252574e66e1956c4dfd016ce411751"
+      "api": "https://oapi.dingtalk.com/robot/send?access_token="
     },
     "shell": {
       "command": "echo"
