@@ -106,6 +106,9 @@ func (inotify *InotifyConf) Delete(file string) {
 
 // Create 创建
 func (inotify *InotifyConf) Create(file string) {
+	if !inotify.IsFilterFile(file) {
+		return
+	}
 	inotify.mu.Lock()
 	inf, err := NewInotifyFile(file, 0)
 	if err != nil {
