@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"inotify/notifytypes"
-	"io/ioutil"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -25,30 +25,17 @@ type InotifyConf struct {
 	gp          *Group
 }
 
-func NewInotify(confPath string) *InotifyConf {
-	var inotify = InotifyConf{}
-	// 读取JSON文件内容
-	fileContent, err := ioutil.ReadFile(confPath)
-	if err != nil {
-		fmt.Println("Error reading JSON file:", err)
-		return nil
-	}
-	// 解析JSON数据到结构体
-	err = json.Unmarshal(fileContent, &inotify)
-	if err != nil {
-		fmt.Println("Error unmarshalling JSON:", err)
-		return nil
-	}
+func NewInotify(inotify *InotifyConf) *InotifyConf {
 	inotify.filterRe = regexp.MustCompile(inotify.FilterFile)
 	inotify.errorRe = regexp.MustCompile(inotify.ErrorKey)
 	inotify.excludeRe = regexp.MustCompile(inotify.ExcludeKey)
 	inotify.ifs = make(map[string]*InotifyFile)
 	inotify.gp = &Group{}
-	return &inotify
+	return inotify
 }
 
 func (inotify *InotifyConf) IsFilterFile(file string) bool {
-	return inotify.filterRe.MatchString(file)
+	return inotify.filterRe.MatchString(path.Base(file))
 }
 
 func (inotify *InotifyConf) HasErrorKey(content string) bool {

@@ -4,24 +4,26 @@
 
 ## 配置
 ```json
-{
-  "dirPath": "/Users/mac/code/go/inotify/log",
-  "filterFile": "\\.log$",
-  "errorKey": "error|fatal",
-  "excludeKey": "23000\\]",
-  "notifyTypes": {
-    "dingding": {
-      "title": "监控：管理后台出现error，请及时关注!",
-      "api": "https://oapi.dingtalk.com/robot/send?access_token="
-    },
-    "shell": {
-      "command": "echo"
+[
+    {
+      "dirPath": "/Users/mac/code/go/inotify/log",
+      "filterFile": "\\.log$",
+      "errorKey": "error|fatal",
+      "excludeKey": "23000\\]",
+      "notifyTypes": {
+        "dingding": {
+          "title": "监控：管理后台出现error，请及时关注!",
+          "api": "https://oapi.dingtalk.com/robot/send?access_token="
+        },
+        "shell": {
+          "command": "echo"
+        }
+      }
     }
-  }
-}
+]
 
 ```
-
+#### 注意是数组，支持一次定义多个监控目录和相关的配置
 - `dirPath` 监控的日志目录路径，必须绝对路径
 - `filterFile` 指定特定的文件，支持正则表达式
 - `errorKey` 错误关键字，支持正则表达式
